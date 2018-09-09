@@ -3,17 +3,35 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/zmb3/spotify"
 )
 
-const redirectURI = "http://localhost:8080/callback"
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+const (
+	redirectURI = "http://localhost:8080/callback"
+	letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+)
+
+// RandStringBytesRmndr - used to create state - uniuqe 10 characters
+func RandStringBytesRmndr(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
+	}
+	return string(b)
+}
 
 var (
 	auth  = spotify.NewAuthenticator(redirectURI, spotify.ScopeUserReadPrivate)
 	ch    = make(chan *spotify.Client)
-	state = "abc123"
+	state = RandStringBytesRmndr(10)
 )
 
 func main() {
