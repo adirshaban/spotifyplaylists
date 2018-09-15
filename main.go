@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zmb3/spotify"
 )
 
@@ -29,24 +30,30 @@ func RandStringBytesRmndr(n int) string {
 }
 
 var (
-	auth  = spotify.NewAuthenticator(redirectURI, spotify.ScopeUserReadPrivate)
-	ch    = make(chan *spotify.Client)
-	state = RandStringBytesRmndr(10)
+	auth          = spotify.NewAuthenticator(redirectURI, spotify.ScopeUserReadPrivate)
+	ch            = make(chan *spotify.Client)
+	state         = RandStringBytesRmndr(10)
+	spotifyClient *spotify.Client
 )
 
 func main() {
-	http.HandleFunc("/callback", completeAuth)
+	r := gin.Default()
+
+	r.GET("/callback", completeAuth)
+	go r.Run(":8080")
+	http.HandleFunc("/search", searchSpotify)
+	http.HandleFunc("/AuthURL", getAuthURL)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Got request for:", r.URL.String())
 	})
 
-	go http.ListenAndServe(":8080", nil)
+	// go http.ListenAndServe(":8080", nil)
 
 	url := auth.AuthURL(state)
 	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
-	client := <-ch
+	spotifyClient = <-ch
 
-	user, err := client.CurrentUser()
+	user, err := spotifyClient.CurrentUser()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,19 +61,27 @@ func main() {
 
 }
 
-func completeAuth(w http.ResponseWriter, r *http.Request) {
-	tok, err := auth.Token(state, r)
+func completeAuth(c *gin.Context) {
+	tok, err := auth.Token(state, c.Request)
 	if err != nil {
-		http.Error(w, "Couldn't get token", http.StatusForbidden)
 		log.Fatal(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 	}
 
 	// check if the current request has the same context
-	if st := r.FormValue("state"); st != state {
-		http.NotFound(w, r)
+	if st := c.Query("state"); st != state {
+		c.JSON(http.StatusNotFound, gin.H{"error": "State mismatch"})
 		log.Fatalf("State mismatch: %s != %s\n", st, state)
 	}
 	client := auth.NewClient(tok)
-	fmt.Fprintf(w, "Login Completed!")
+	c.String(http.StatusOK, "Login Complete")
 	ch <- &client
+}
+
+func getAuthURL(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func searchSpotify(w http.ResponseWriter, r *http.Request) {
+	// results, err := spotifyClient.Search(r.FormValue("term"), spotify.SearchTypeArtist)
 }
