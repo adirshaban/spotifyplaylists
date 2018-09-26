@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
 	"github.com/zmb3/spotify"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -26,13 +27,16 @@ func RandStringBytesRmndr(n int) string {
 }
 
 var (
-	auth          = spotify.NewAuthenticator(redirectURI, spotify.ScopeUserReadPrivate)
+	auth          = spotify.NewAuthenticator(redirectURI, spotify.ScopePlaylistModifyPublic)
 	spotifyClient *spotify.Client
 	redisClient   *redis.Client
 )
 
 func init() {
+	// inits the rand time
 	rand.Seed(time.Now().UnixNano())
+
+	// Inits the redis client
 	redisClient = redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "", // no password set
@@ -45,6 +49,8 @@ func main() {
 
 	r.GET("/callback", completeAuth)
 	r.GET("/authurl", getAuthURL)
+	r.GET("/search", searchSpotify)
+	r.POST("/playlist", createPlaylist)
 	r.Run(":8080")
 }
 
@@ -59,6 +65,8 @@ func completeAuth(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
+
+	// TODO: remove key maybe
 
 	// check if the current request has the same context
 	if state == "" {
@@ -81,6 +89,47 @@ func getAuthURL(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"authurl": url})
 }
 
-func searchSpotify(w http.ResponseWriter, r *http.Request) {
-	// results, err := spotifyClient.Search(r.FormValue("term"), spotify.SearchTypeArtist)
+func searchSpotify(c *gin.Context) {
+	token := c.GetHeader("spotify-access-token")
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No token provided."})
+	}
+
+	client := auth.NewClient(&oauth2.Token{AccessToken: token})
+	results, err := client.Search(c.Query("term"), spotify.SearchTypeArtist)
+	if err != nil {
+		panic(err)
+	}
+	c.JSON(http.StatusOK, gin.H{"results": results})
+}
+
+/*
+User should send post request with body as follow:
+{
+	artists: [{artist: ID, tracks: TRACKS_NUMBER}],
+	name: NAME,
+	public: true/fales
+}
+if TRACKS_NUMEBR is 0 then all tracks from artist are added, otherwise gets the top X tracks
+*/
+func createPlaylist(c *gin.Context) {
+	token := c.GetHeader("spotify-access-token")
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No token provided."})
+	}
+
+	client := auth.NewClient(&oauth2.Token{AccessToken: token})
+	playlistName := c.GetString("name")
+	isPublic := c.GetBool("public")
+	currentUesr, err := client.CurrentUser()
+	if err != nil {
+		panic(err)
+	}
+	playlist, err := client.CreatePlaylistForUser(currentUesr.ID, playlistName, isPublic)
+	if err != nil {
+		panic(err)
+	}
+	artists, _ := c.Get("artists")
+
+	c.JSON(http.StatusOK, gin.H{"fiuc": artists, "playlist": playlist})
 }
