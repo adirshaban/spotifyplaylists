@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -27,7 +28,7 @@ func RandStringBytesRmndr(n int) string {
 }
 
 var (
-	auth          = spotify.NewAuthenticator(redirectURI, spotify.ScopePlaylistModifyPublic)
+	auth          = spotify.NewAuthenticator(redirectURI, spotify.ScopePlaylistModifyPrivate)
 	spotifyClient *spotify.Client
 	redisClient   *redis.Client
 )
@@ -112,24 +113,39 @@ User should send post request with body as follow:
 }
 if TRACKS_NUMEBR is 0 then all tracks from artist are added, otherwise gets the top X tracks
 */
+
 func createPlaylist(c *gin.Context) {
+	type Artist struct {
+		Artist string `json:"id" binding:"required"`
+		Tracks int    `json:"tracks" binding:"required"`
+	}
+
+	type PlaylistBody struct {
+		Name     string   `json:"name" binding:"required"`
+		IsPublic bool     `json:"ispublic" binding:"required"`
+		Artists  []Artist `json:"artists" binding:"required"`
+	}
+
 	token := c.GetHeader("spotify-access-token")
 	if token == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No token provided."})
 	}
 
 	client := auth.NewClient(&oauth2.Token{AccessToken: token})
-	playlistName := c.GetString("name")
-	isPublic := c.GetBool("public")
+	var body PlaylistBody
+	c.Bind(&body)
+
 	currentUesr, err := client.CurrentUser()
 	if err != nil {
 		panic(err)
 	}
-	playlist, err := client.CreatePlaylistForUser(currentUesr.ID, playlistName, isPublic)
+
+	playlist, err := client.CreatePlaylistForUser(currentUesr.ID, body.Name, body.IsPublic)
 	if err != nil {
 		panic(err)
 	}
-	artists, _ := c.Get("artists")
 
-	c.JSON(http.StatusOK, gin.H{"fiuc": artists, "playlist": playlist})
+	fmt.Printf("tracks %#v", body.Artists)
+
+	c.JSON(http.StatusOK, gin.H{"playlist": playlist})
 }
