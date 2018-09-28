@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -144,8 +143,6 @@ func createPlaylist(c *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Printf("tracks %#v", body.Artists)
 
 	c.JSON(http.StatusOK, gin.H{"playlist": playlist})
 }
