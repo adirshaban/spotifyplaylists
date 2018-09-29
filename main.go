@@ -63,6 +63,7 @@ func completeAuth(c *gin.Context) {
 	}
 	state, err := redisClient.Get(queryState).Result()
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong with the server, try again later"})
 		panic(err)
 	}
 
@@ -83,6 +84,7 @@ func getAuthURL(c *gin.Context) {
 
 	err := redisClient.Set(state, 0, 0).Err()
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong with the server, try again later"})
 		panic(err)
 	}
 
@@ -98,6 +100,7 @@ func searchSpotify(c *gin.Context) {
 	client := auth.NewClient(&oauth2.Token{AccessToken: token})
 	results, err := client.Search(c.Query("term"), spotify.SearchTypeArtist)
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		panic(err)
 	}
 	c.JSON(http.StatusOK, gin.H{"results": results})
@@ -136,18 +139,22 @@ func createPlaylist(c *gin.Context) {
 
 	currentUesr, err := client.CurrentUser()
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		panic(err)
 	}
 
 	playlist, err := client.CreatePlaylistForUser(currentUesr.ID, body.Name, body.IsPublic)
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		panic(err)
 	}
 
+	// Adds the tracks to the playlist
 	for _, artist := range body.Artists {
 		if artist.TopHits {
 			tracks, err := client.GetArtistsTopTracks(artist.ID, currentUesr.Country)
 			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 				panic(err)
 			}
 			var ids []spotify.ID
@@ -157,7 +164,32 @@ func createPlaylist(c *gin.Context) {
 			}
 			client.AddTracksToPlaylist(currentUesr.ID, playlist.ID, ids...)
 		} else {
+			// gets the albums
+			albums, err := client.GetArtistAlbums(artist.ID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+				panic(err)
+			}
 
+			for albums.Next != "" {
+				for _, album := range albums.Albums {
+					var ids []spotify.ID
+					tracks, err := client.GetAlbumTracks(album.ID)
+					if err != nil {
+						c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+						panic(err)
+					}
+
+					// TODO: handle tbe tracks page
+
+					for _, track := range tracks.Tracks {
+						ids = append(ids, track.ID)
+					}
+
+					client.AddTracksToPlaylist(currentUesr.ID, playlist.ID, ids...)
+				}
+
+			}
 		}
 	}
 
