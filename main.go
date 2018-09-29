@@ -27,7 +27,7 @@ func RandStringBytesRmndr(n int) string {
 }
 
 var (
-	auth          = spotify.NewAuthenticator(redirectURI, spotify.ScopePlaylistModifyPrivate)
+	auth          = spotify.NewAuthenticator(redirectURI, spotify.ScopePlaylistModifyPrivate, spotify.ScopeUserReadPrivate)
 	spotifyClient *spotify.Client
 	redisClient   *redis.Client
 )
@@ -106,17 +106,17 @@ func searchSpotify(c *gin.Context) {
 /*
 User should send post request with body as follow:
 {
-	artists: [{artist: ID, tracks: TRACKS_NUMBER}],
+	artists: [{artist: ID, tophits: true/false}],
 	name: NAME,
 	public: true/fales
 }
-if TRACKS_NUMEBR is 0 then all tracks from artist are added, otherwise gets the top X tracks
+if TopHits is true only the top hits will be added otherwise all tracks will be added
 */
 
 func createPlaylist(c *gin.Context) {
 	type Artist struct {
-		Artist string `json:"id" binding:"required"`
-		Tracks int    `json:"tracks" binding:"required"`
+		ID      spotify.ID `json:"id" binding:"required"`
+		TopHits bool       `json:"tophits" binding:"required"`
 	}
 
 	type PlaylistBody struct {
@@ -142,6 +142,23 @@ func createPlaylist(c *gin.Context) {
 	playlist, err := client.CreatePlaylistForUser(currentUesr.ID, body.Name, body.IsPublic)
 	if err != nil {
 		panic(err)
+	}
+
+	for _, artist := range body.Artists {
+		if artist.TopHits {
+			tracks, err := client.GetArtistsTopTracks(artist.ID, currentUesr.Country)
+			if err != nil {
+				panic(err)
+			}
+			var ids []spotify.ID
+
+			for _, track := range tracks {
+				ids = append(ids, track.ID)
+			}
+			client.AddTracksToPlaylist(currentUesr.ID, playlist.ID, ids...)
+		} else {
+
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"playlist": playlist})
