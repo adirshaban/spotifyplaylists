@@ -1,9 +1,11 @@
 package main
 
 import (
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -45,13 +47,17 @@ func init() {
 }
 
 func main() {
-	r := gin.Default()
+	// Logging to a file.
+	logFile, _ := os.Create("app.log")
+	gin.DefaultWriter = io.MultiWriter(logFile, os.Stdout)
 
-	r.GET("/callback", completeAuth)
-	r.GET("/authurl", getAuthURL)
-	r.GET("/search", searchSpotify)
-	r.POST("/playlist", createPlaylist)
-	r.Run(":8080")
+	router := gin.Default()
+
+	router.GET("/callback", completeAuth)
+	router.GET("/authurl", getAuthURL)
+	router.GET("/search", searchSpotify)
+	router.POST("/playlist", createPlaylist)
+	router.Run(":8080")
 }
 
 func completeAuth(c *gin.Context) {
@@ -64,6 +70,7 @@ func completeAuth(c *gin.Context) {
 	state, err := redisClient.Get(queryState).Result()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong with the server, try again later"})
+		log.Fatal("Redis error", err)
 		panic(err)
 	}
 
@@ -171,7 +178,7 @@ func createPlaylist(c *gin.Context) {
 				panic(err)
 			}
 
-			for albums.Next != "" {
+			for hasMore := true; hasMore; hasMore = albums.Next != "" {
 				for _, album := range albums.Albums {
 					var ids []spotify.ID
 					tracks, err := client.GetAlbumTracks(album.ID)
