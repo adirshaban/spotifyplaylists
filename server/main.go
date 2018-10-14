@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
 	"github.com/zmb3/spotify"
@@ -53,8 +55,17 @@ func main() {
 
 	router := gin.Default()
 
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	router.GET("/callback", completeAuth)
-	router.GET("/authurl", getAuthURL)
+	router.GET("/login", login)
 	router.GET("/search", searchSpotify)
 	router.POST("/playlist", createPlaylist)
 	router.Run(":8080")
@@ -62,30 +73,25 @@ func main() {
 
 func completeAuth(c *gin.Context) {
 	queryState := c.Query("state")
+	storedCockie, _ := c.Cookie("state")
+	fmt.Printf("Query %s \n Stored %s", queryState, storedCockie)
+	// check if the current request has the same context
+	if queryState != storedCockie {
+		c.JSON(http.StatusNotFound, gin.H{"error": "State mismatch"})
+		log.Fatalf("State does not exist: %s\n", queryState)
+	}
+
 	tok, err := auth.Token(queryState, c.Request)
 	if err != nil {
 		log.Fatal(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 	}
-	state, err := redisClient.Get(queryState).Result()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong with the server, try again later"})
-		log.Fatal("Redis error", err)
-		panic(err)
-	}
 
-	// TODO: remove key maybe
-
-	// check if the current request has the same context
-	if state == "" {
-		c.JSON(http.StatusNotFound, gin.H{"error": "State mismatch"})
-		log.Fatalf("State does not exist: %s\n", queryState)
-	}
-
-	c.JSON(http.StatusOK, gin.H{"accessToken": tok.AccessToken})
+	c.Redirect(http.StatusPermanentRedirect, fmt.Sprintf("http://localhost:3000/#?access_token=%s", tok.AccessToken))
+	// c.JSON(http.StatusOK, gin.H{"accessToken": tok.AccessToken})
 }
 
-func getAuthURL(c *gin.Context) {
+func login(c *gin.Context) {
 	state := RandStringBytesRmndr(10)
 	url := auth.AuthURL(state)
 
@@ -94,8 +100,8 @@ func getAuthURL(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong with the server, try again later"})
 		panic(err)
 	}
-
-	c.JSON(http.StatusOK, gin.H{"authurl": url})
+	c.SetCookie("state", state, 1, "/", "localhost", false, false)
+	c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
 func searchSpotify(c *gin.Context) {
