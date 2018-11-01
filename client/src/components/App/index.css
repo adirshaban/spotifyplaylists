@@ -5,9 +5,19 @@
     background: #3579f1;
     overflow: hidden;
     padding-top: 15vh;
+    background-image: url("http://localhost:3000/bg.jpg");
+    background-color: black;
+    background-repeat: no-repeat;
+    background-position: top center;
+    background-size: cover;   
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    position: absolute;
 }
 
-.app-container::before {
+/* .app-container::before {
     background-image: url("http://localhost:3000/bg.jpg");
     background-color: black;
     background-repeat: no-repeat;
@@ -23,10 +33,11 @@
     right: 0;
     position: absolute;
     z-index: 1; 
-}
+} */
 
 .logo {
     display: block;
     margin: 1vh auto;
     z-index: 2;
+    text-align: center;
 }

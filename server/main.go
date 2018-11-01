@@ -58,7 +58,7 @@ func main() {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST"},
-		AllowHeaders:     []string{"Origin"},
+		AllowHeaders:     []string{"Origin", "spotify-access-token"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
@@ -78,7 +78,7 @@ func completeAuth(c *gin.Context) {
 	// check if the current request has the same context
 	if queryState != storedCockie {
 		c.JSON(http.StatusNotFound, gin.H{"error": "State mismatch"})
-		log.Fatalf("State does not exist: %s\n", queryState)
+		log.Fatalf("State does not exist: Query - %s  Stored - %s\n", queryState, storedCockie)
 	}
 
 	tok, err := auth.Token(queryState, c.Request)
@@ -87,7 +87,7 @@ func completeAuth(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 	}
 
-	c.Redirect(http.StatusPermanentRedirect, fmt.Sprintf("http://localhost:3000/#?access_token=%s", tok.AccessToken))
+	c.Redirect(http.StatusPermanentRedirect, fmt.Sprintf("http://localhost:3000/#access_token=%s", tok.AccessToken))
 	// c.JSON(http.StatusOK, gin.H{"accessToken": tok.AccessToken})
 }
 
