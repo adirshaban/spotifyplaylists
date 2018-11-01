@@ -1,0 +1,28 @@
+.label-title {
+    font-size: x-large;
+    color: white;
+    margin: auto 0;
+}
+
+.input-title {
+    background-color: grey;
+    border-color: black;
+    color: white;
+    font-size: x-large;
+}
+
+.label-container {
+    text-align: left;
+    width: 35%;
+    position: relative;
+    margin: 0 auto;
+    background: rgba(0,0,0,.6);
+    border-radius: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    padding-left: 1.5em;
+    padding-right: 1.5rem;
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
+
+}

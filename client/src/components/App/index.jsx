@@ -3,6 +3,7 @@ import LoginButton from '../LoginButton';
 import './index.css';
 import Search from '../Search';
 import ArtistList from '../ArtistList';
+import EditableTitle from '../EditableTitle';
 
 class App extends Component {
   constructor() {
@@ -42,7 +43,12 @@ class App extends Component {
           <img src="public/logo.jpeg" alt="Logo" />
         </div>
         {this.state.accessToken ? <Search token={this.state.accessToken} addArtist={this.addArtist} /> : <LoginButton />}
-        {this.state.artists && <ArtistList artists={this.state.artists} changeType={this.changeType} />}
+        {this.state.artists.length && (<React.Fragment>
+          <EditableTitle
+            onChange={title => {this.setState({title})}}
+            />
+          <ArtistList artists={this.state.artists} changeType={this.changeType} />
+          </React.Fragment>)}
       </div>
     );
   }
