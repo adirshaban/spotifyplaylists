@@ -1,69 +1,67 @@
-import React,  { Component } from 'react';
+import React,  { useState } from 'react';
 import Autocomplete from 'react-autocomplete';
 import request from 'superagent';
 import AwesomeDebouncePromise from 'awesome-debounce-promise';
 
-class Search extends Component {
-    state ={
-        value: '',
-        items: []
-    }
+function Search(props) {
+    const [term, setTerm ] = useState('');
+    const [items, setItems] = useState([]);
 
-    searchArtist = (term) => request
+    const searchArtist = (serachTerm) => request
                             .get('http://localhost:8080/search')
-                            .query({term})
-                            .set('spotify-access-token', this.props.token);
+                            .query({term: serachTerm})
+                            .set('spotify-access-token', props.token);
     
-    debouncedSearch = AwesomeDebouncePromise(this.searchArtist, 500);
+    const debouncedSearch = AwesomeDebouncePromise(searchArtist, 500);
 
-    onChange = async (e) => {
-        this.setState({value: e.target.value}) 
+    const onChange = async (e) => {
+        setTerm(e.target.value); 
         // {body: {artists: {items}}}
-        const {body: {results: {artists: {items}}}} = await this.debouncedSearch(e.target.value);
+        const {body: {results: {artists: {items}}}} = await debouncedSearch(e.target.value);
         
         // console.log(res.body)
-        this.setState({items});
+        setItems(items);
     }
 
-    onSelect = (value) => {
-        this.props.addArtist(this.state.items.filter(item => item.name === value)[0]);
-        this.setState({value: ''});
+    const onSelect = (value) => {
+        props.addArtist(items.filter(item => item.name === value)[0]);
+        setTerm('');
     }
 
-    render() {
-        const menuStyle={
-            borderRadius: '5px',
-            boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
-            background: 'rgba(255, 255, 255, 0.9)',
-            padding: '2px 0',
-            fontSize: '90%',
-            position: 'fixed',
-            overflow: 'hidden',
-            maxHeight: '50%',
-          },
-          wrapperStyle={
-            display: 'block',
-            margin: '1vh auto',
-            width: '20%',
-            textAlign: 'center',
-          };
-        return (
-        <Autocomplete
-            getItemValue={(item) => item.name}
-            items={this.state.items}
-            renderItem={(item, isHighlighted) =>
-                <div style={{ background: isHighlighted ? 'lightgray' : 'white' , color: 'black'}}>
-                {item.name}
-                </div>
-            }
-            renderInput={(props) => <input className="input" {...props}/>}
-            value={this.state.value}
-            onChange={this.onChange}
-            onSelect={this.onSelect}
-            wrapperStyle={wrapperStyle}
-            menuStyle={menuStyle}
-        />)
-    }
+    
+    const menuStyle={
+        borderRadius: '5px',
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
+        background: 'rgba(255, 255, 255, 0.9)',
+        padding: '2px 0',
+        fontSize: '90%',
+        position: 'fixed',
+        overflow: 'hidden',
+        maxHeight: '50%',
+        },
+        wrapperStyle={
+        display: 'block',
+        margin: '1vh auto',
+        width: '20%',
+        textAlign: 'center',
+        };
+    return (
+    <Autocomplete
+        getItemValue={(item) => item.name}
+        items={items}
+        renderItem={(item, isHighlighted) =>
+            <div style={{ background: isHighlighted ? 'lightgray' : 'white' , color: 'black'}}>
+            {item.name}
+            </div>
+        }
+        renderInput={(props) => <input className="input" {...props}/>}
+        value={term}
+        onChange={onChange}
+        onSelect={onSelect}
+        wrapperStyle={wrapperStyle}
+        menuStyle={menuStyle}
+    />)
+
 }
 
 export default Search;

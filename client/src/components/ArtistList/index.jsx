@@ -15,14 +15,10 @@ function Artist({artist, changeType}) {
             </div>
         </div>
         <div className="media-right">
-            <div className="control">
-                <label className="radio">
-                    <input type="radio" name="type" onChange={changeType.bind(null,artist, 'all')} checked /> All Albums
-                </label>
-                <label className="radio"> 
-                    <input type="radio" name="type" onChange={changeType.bind(null,artist, 'top')} /> Top tracks
-                </label>
-            </div>
+            <label className="checkbox">
+                <input type="checkbox" value="1" onChange={(e) => {console.log(e); changeType(artist, e.target.checked)}}/>
+                All Albums
+            </label>
         </div>
     </article>
     )

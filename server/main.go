@@ -39,13 +39,6 @@ var (
 func init() {
 	// inits the rand time
 	rand.Seed(time.Now().UnixNano())
-
-	// Inits the redis client
-	redisClient = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
 }
 
 func main() {
@@ -58,7 +51,7 @@ func main() {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST"},
-		AllowHeaders:     []string{"Origin", "spotify-access-token"},
+		AllowHeaders:     []string{"Origin", "spotify-access-token", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
@@ -95,11 +88,6 @@ func login(c *gin.Context) {
 	state := RandStringBytesRmndr(10)
 	url := auth.AuthURL(state)
 
-	err := redisClient.Set(state, 0, 0).Err()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong with the server, try again later"})
-		panic(err)
-	}
 	c.SetCookie("state", state, 1, "/", "localhost", false, false)
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }
