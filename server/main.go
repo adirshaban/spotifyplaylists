@@ -31,7 +31,7 @@ func RandStringBytesRmndr(n int) string {
 }
 
 var (
-	auth          = spotify.NewAuthenticator(redirectURI, spotify.ScopePlaylistModifyPrivate, spotify.ScopeUserReadPrivate)
+	auth          = spotify.NewAuthenticator(redirectURI, spotify.ScopePlaylistModifyPrivate, spotify.ScopeUserReadPrivate, spotify.ScopePlaylistModifyPublic)
 	spotifyClient *spotify.Client
 	redisClient   *redis.Client
 )

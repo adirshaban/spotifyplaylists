@@ -2,42 +2,11 @@
     color: white;
     position: relative;
     min-height: 100vh;
-    background: #3579f1;
     overflow: hidden;
-    padding-top: 15vh;
-    background-image: url("http://localhost:3000/bg.jpg");
-    background-color: black;
-    background-repeat: no-repeat;
-    background-position: top center;
-    background-size: cover;   
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    position: absolute;
+    background-color: rgba(173, 171, 171, 0.5);
 }
 
-/* .app-container::before {
-    background-image: url("http://localhost:3000/bg.jpg");
-    background-color: black;
-    background-repeat: no-repeat;
-    background-position: top center;
-    background-size: cover;   
-    width: 100%;
-    height: 100%;
-    opacity: 0.83;
-    content: " "; 
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    position: absolute;
-    z-index: 1; 
-} */
-
-.logo {
-    display: block;
-    margin: 1vh auto;
-    z-index: 2;
+.logo {    
+    margin: 1vh 1vw;
     text-align: center;
 }
