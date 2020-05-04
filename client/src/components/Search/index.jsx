@@ -19,7 +19,7 @@ const Form = styled.form`
 `;
 
 const SearchInput = styled.input`
-  font-size: 14px;
+  font-size: 1em;
   line-height: 1;
   background-color: transparent;
   margin-left: ${props => (props.barOpened ? "1rem" : "0rem")};

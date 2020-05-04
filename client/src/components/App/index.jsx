@@ -61,12 +61,15 @@ function App() {
   function renderApp() {
     return (
       <React.Fragment>
-        <EditableTitle
-          onChange={title => {
-            setTitle(title);
-          }}
-        />
-        <Search token={accessToken} addArtist={addArtist} />
+        <div style={{position: 'relative', display: "flex", justifyContent: "center"}}>
+          <EditableTitle
+            onChange={(title) => {
+              setTitle(title);
+            }}
+          />
+          <Search token={accessToken} addArtist={addArtist} />
+        </div>
+
         <ArtistList artists={artists} changeType={changeType} />
         <button className="button is-primary" onClick={postPlaylist}>
           Done

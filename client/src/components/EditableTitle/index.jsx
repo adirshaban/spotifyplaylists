@@ -1,67 +1,94 @@
-import React, { useState } from 'react';
-import './index.css'
+import React, { useState, useRef, useEffect } from "react";
+import styled from "styled-components";
 
-function Label({children, onClick}) {
-    return (
-        <div className="field">
-            <p className="label-container" onClick={onClick}>
-                <label className="label-title" >{children}</label>
-                <span className="icon is-right" style={{margin: 'auto 0'}}>
-                    <i className="fa fa-edit fa-2x"></i>
-                </span>
-            </p>
-        </div>
-    )
-}
+const Title = styled.span`
+  font-size: 1.5em;
+  text-align: center;
+  padding: 0.5rem;
+  font-family: "Titillium Web", sans-serif;
+  color: black;
 
-function Input({value, onSave}) {
-    const [cValue, setValue ] = useState(value);
+  &:hover {
+    border-bottom: 0.2rem dotted black;
+    /* border: 1px solid #3a3939;
+    border-radius: 0.75rem; */
+  }
+`;
 
-    const onKeyUp = (e) => {
-        if (e.keyCode === 13) {
-            onSave(cValue);
-        }
+const TitleInput = styled.input`
+  font-size: 1.5em;
+  line-height: 1;
+  background-color: transparent;
+  padding: 0.5rem;
+  color: black;
+  border-top: none;
+  border-right: none;
+  border-left: none;
+  border-bottom: 0.2rem dotted black;
+
+  font-family: "Titillium Web", sans-serif;
+
+  &:focus,
+  &:active {
+    outline: none;
+  }
+`;
+
+const TitleContainer = styled.div`
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 30%;
+`;
+
+function EditableTitle() {
+  const [title, setTitle] = useState("My Awesome Title");
+  const [isLabel, setIsLabel] = useState(true);
+  const inputRef = useRef(null);
+
+  const handleLabelClick = () => {
+    setIsLabel(false);
+  };
+
+  const handleTitleChange = (e) => {
+    setTitle(e.target.value);
+  };
+
+  const handleTitleKeyUp = (e) => {
+    if (e.keyCode === 13) {
+      setIsLabel(true);
     }
+  };
 
-    const save = () => {
-        onSave(cValue);
+  const handleTitleBlur = () => {
+    setIsLabel(true);
+  };
+
+  useEffect(() => {
+    if (!isLabel) {
+      inputRef.current.focus();
+      
     }
+  }, [isLabel]);
 
-    const onChange = e => {
-        setValue(e.target.value);
-    }
-
-    const containerStyle = {
-        width: '35%',
-        margin: '0 auto'
-    };
-
-    const inputStyle = {
-        fontSize: 'larger',
-        backgroundColor: 'rgba(255,255,255,0.8)'
-    }
-
-    return (
-        <div className="field">
-         <p style={containerStyle} className="control">
-            <input className="input" style={inputStyle} autoFocus type="text" value={cValue} onBlur={save} onChange={onChange} onKeyUp={onKeyUp} />            
-        </p>
-    </div>
-    )
-}
-
-function EditableTitle({onChange}) {
-    const [title, updateTitle] = useState('My Awesome Title');
-    const [isLabel, setIsLabel] = useState(true);
-    return (
-        <React.Fragment>
-        {
-            isLabel ? 
-                <Label onClick={setIsLabel.bind(null, false)}>{title}</Label> : 
-                <Input value={title} onSave={title => {setIsLabel(true); updateTitle(title); onChange(title)}} />
-        }
-        </React.Fragment>
-    )
+  return (
+    <TitleContainer>
+      
+      {isLabel ? (
+        <Title onClick={handleLabelClick}>{title}</Title>
+      ) : (
+        <TitleInput
+          value={title}
+          onChange={handleTitleChange}
+          onKeyUp={handleTitleKeyUp}
+          onBlur={handleTitleBlur}
+          ref={inputRef}
+          focus
+        />
+      )}
+    </TitleContainer>
+  );
 }
 
 export default EditableTitle;
